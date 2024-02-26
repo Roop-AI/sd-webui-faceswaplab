@@ -241,8 +241,18 @@ def extract_faces(
                 if faces:
                     face_images = []
                     for face in faces:
-                        bbox = face.bbox.astype(int)  # type: ignore
+                        bbox = face.bbox.astype(int)
                         x_min, y_min, x_max, y_max = bbox
+
+                        # Extend the bounding box by a certain percentage (adjust as needed)
+                        width_extension = (x_max - x_min) * 0.3
+                        height_extension = (y_max - y_min) * 0.3
+
+                        x_min = max(0, x_min - width_extension)
+                        y_min = max(0, y_min - height_extension)
+                        x_max = min(img.width, x_max + width_extension)
+                        y_max = min(img.height, y_max + height_extension)
+
                         face_image = img.crop((x_min, y_min, x_max, y_max))
 
                         if postprocess_options and (
@@ -266,11 +276,72 @@ def extract_faces(
             return result_images
     except Exception as e:
         logger.error("Failed to extract : %s", e)
-        import traceback
-
         traceback.print_exc()
     return None
-
+##def extract_faces(
+##    images: List[PILImage],
+##    extract_path: Optional[str],
+##    postprocess_options: PostProcessingOptions,
+##) -> Optional[List[PILImage]]:
+ #   """
+ #   Extracts faces from a list of image files.
+#
+ #   Given a list of image file paths, this function opens each image, extracts the faces,
+ #   and saves them in a specified directory. Post-processing is applied to each extracted face,
+ #   and the processed faces are saved as separate PNG files.
+#
+ #   Parameters:
+ #   files (Optional[List[Image]]): List of file paths to the images to extract faces from.
+ #   extract_path (Optional[str]): Path where the extracted faces will be saved.
+ #                                 If no path is provided, a temporary directory will be created.
+ #   postprocess_options (PostProcessingOptions): Post-processing settings to be applied to the images.
+#
+ #   Returns:
+ #   Optional[List[img]]: List of face images
+ #   """
+#
+ #   try:
+ #       if extract_path:
+ #           os.makedirs(extract_path, exist_ok=True)
+#
+ #       if images:
+ #           result_images: list[PILImage] = []
+ #           for img in images:
+ #               faces = get_faces(pil_to_cv2(img))
+#
+ #               if faces:
+ #                   face_images = []
+ #                   for face in faces:
+ #                       bbox = face.bbox.astype(int)  # type: ignore
+ #                       x_min, y_min, x_max, y_max = bbox
+ #                       face_image = img.crop((x_min, y_min, x_max, y_max))
+ #                       
+ #                       if postprocess_options and (
+ #                           postprocess_options.face_restorer_name
+ #                           or postprocess_options.restorer_visibility
+ #                       ):
+ #                           postprocess_options.scale = (
+ #                               1 if face_image.width > 512 else 512 // face_image.width
+ #                           )
+ #                           face_image = enhance_image(face_image, postprocess_options)
+#
+ #                       if extract_path:
+ #                           path = tempfile.NamedTemporaryFile(
+ #                               delete=False, suffix=".png", dir=extract_path
+ #                           ).name
+ #                           face_image.save(path)
+ #                       face_images.append(face_image)
+#
+ #                   result_images += face_images
+#
+ #           return result_images
+ #   except Exception as e:
+ #       logger.error("Failed to extract : %s", e)
+ #       import traceback
+#
+ #       traceback.print_exc()
+ #   return None
+#
 
 class FaceModelException(Exception):
     """Exception raised when an error is encountered in the face model."""
